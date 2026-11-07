@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: store
+    description: Public store catalog and Telegram status
+  - name: admin
+    description: Owner-only catalog and category management
+  - name: payments
+    description: Telegram Stars invoices
 paths:
   /healthz:
     get:
@@ -24,6 +30,349 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /store:
+    get:
+      operationId: getStore
+      tags: [store]
+      summary: Get the storefront catalog
+      responses:
+        "200":
+          description: Storefront catalog and checkout availability.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Storefront"
+  /bot/status:
+    get:
+      operationId: getBotStatus
+      tags: [store]
+      summary: Check Telegram bot and Stars availability
+      responses:
+        "200":
+          description: Current Telegram configuration.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BotStatus"
+  /admin/session:
+    get:
+      operationId: getAdminSession
+      tags: [admin]
+      summary: Check the current admin session
+      responses:
+        "200":
+          description: Admin session status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+    post:
+      operationId: createAdminSession
+      tags: [admin]
+      summary: Authenticate with an admin PIN or Telegram WebApp data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSessionInput"
+      responses:
+        "200":
+          description: Admin session created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "401":
+          description: Admin authentication failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: Telegram authentication is not configured.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    delete:
+      operationId: deleteAdminSession
+      tags: [admin]
+      summary: End the current admin session
+      responses:
+        "204":
+          description: Admin session ended.
+  /admin/media:
+    post:
+      operationId: uploadMedia
+      tags: [admin]
+      summary: Upload a store media file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/MediaUploadInput"
+      responses:
+        "201":
+          description: Media stored durably.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaUpload"
+        "400":
+          description: Unsupported or invalid media.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Admin authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/categories:
+    post:
+      operationId: createCategory
+      tags: [admin]
+      summary: Create a custom category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Category created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          description: Invalid category.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Admin authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/categories/{categoryId}:
+    patch:
+      operationId: updateCategory
+      tags: [admin]
+      summary: Update a category
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryUpdate"
+      responses:
+        "200":
+          description: Category updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "401":
+          description: Admin authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Category not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    delete:
+      operationId: deleteCategory
+      tags: [admin]
+      summary: Delete an empty custom category
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Category deleted.
+        "400":
+          description: Built-in categories cannot be deleted or category has products.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Admin authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Category not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/products:
+    post:
+      operationId: createProduct
+      tags: [admin]
+      summary: Add a product to the store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Product created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid product.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Admin authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    get:
+      operationId: getAdminProducts
+      tags: [admin]
+      summary: List products for store administration
+      responses:
+        "200":
+          description: Product list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "401":
+          description: Admin authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/products/{productId}:
+    patch:
+      operationId: updateProduct
+      tags: [admin]
+      summary: Update a product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdate"
+      responses:
+        "200":
+          description: Product updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "401":
+          description: Admin authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Product not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    delete:
+      operationId: deleteProduct
+      tags: [admin]
+      summary: Delete a product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Product deleted.
+        "401":
+          description: Admin authentication required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Product not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /payments/invoice:
+    post:
+      operationId: createInvoice
+      tags: [payments]
+      summary: Create a Telegram Stars invoice link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvoiceInput"
+      responses:
+        "200":
+          description: Telegram Stars invoice link.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+        "404":
+          description: Product not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: Telegram Stars checkout is not configured.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +382,134 @@ components:
           type: string
       required:
         - status
+    ErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    Category:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        labelEn: { type: string }
+        labelRu: { type: string }
+        sortOrder: { type: integer }
+        isSystem: { type: boolean }
+      required: [id, slug, labelEn, labelRu, sortOrder, isSystem]
+    Product:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        categoryId: { type: string, format: uuid }
+        titleEn: { type: string }
+        titleRu: { type: string }
+        descriptionEn: { type: string }
+        descriptionRu: { type: string }
+        priceStars: { type: integer, minimum: 1 }
+        mediaType: { type: string, enum: [video, audio, image] }
+        mediaPath: { type: ["string", "null"] }
+        mediaUrl: { type: ["string", "null"] }
+        mediaContentType: { type: ["string", "null"] }
+        fileName: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required:
+        [id, categoryId, titleEn, titleRu, descriptionEn, descriptionRu, priceStars, mediaType, mediaPath, mediaUrl, mediaContentType, fileName, createdAt]
+    Storefront:
+      type: object
+      properties:
+        categories:
+          type: array
+          items: { $ref: "#/components/schemas/Category" }
+        products:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+        paymentsEnabled: { type: boolean }
+      required: [categories, products, paymentsEnabled]
+    BotStatus:
+      type: object
+      properties:
+        botConfigured: { type: boolean }
+        paymentsEnabled: { type: boolean }
+        ownerLink: { type: string, format: uri }
+      required: [botConfigured, paymentsEnabled, ownerLink]
+    AdminSession:
+      type: object
+      properties:
+        isAdmin: { type: boolean }
+        ownerUsername: { type: string }
+      required: [isAdmin, ownerUsername]
+    AdminSessionInput:
+      type: object
+      properties:
+        pin: { type: string }
+        initData: { type: string }
+    MediaUploadInput:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+      required: [file]
+    MediaUpload:
+      type: object
+      properties:
+        mediaPath: { type: string }
+        mediaUrl: { type: string, format: uri }
+        mediaContentType: { type: string }
+        fileName: { type: string }
+        mediaType: { type: string, enum: [video, audio, image] }
+      required: [mediaPath, mediaUrl, mediaContentType, fileName, mediaType]
+    CategoryInput:
+      type: object
+      properties:
+        slug: { type: string, minLength: 2, maxLength: 48 }
+        labelEn: { type: string, minLength: 1, maxLength: 64 }
+        labelRu: { type: string, minLength: 1, maxLength: 64 }
+        sortOrder: { type: integer }
+      required: [slug, labelEn, labelRu]
+    CategoryUpdate:
+      type: object
+      properties:
+        labelEn: { type: string, minLength: 1, maxLength: 64 }
+        labelRu: { type: string, minLength: 1, maxLength: 64 }
+        sortOrder: { type: integer }
+    ProductInput:
+      type: object
+      properties:
+        categoryId: { type: string, format: uuid }
+        titleEn: { type: string, minLength: 1, maxLength: 120 }
+        titleRu: { type: string, minLength: 1, maxLength: 120 }
+        descriptionEn: { type: string, maxLength: 1200 }
+        descriptionRu: { type: string, maxLength: 1200 }
+        priceStars: { type: integer, minimum: 1, maximum: 100000 }
+        mediaType: { type: string, enum: [video, audio, image] }
+        mediaPath: { type: string, minLength: 1 }
+        mediaContentType: { type: string, minLength: 1 }
+        fileName: { type: string, minLength: 1 }
+      required: [categoryId, titleEn, titleRu, descriptionEn, descriptionRu, priceStars, mediaType, mediaPath, mediaContentType, fileName]
+    ProductUpdate:
+      type: object
+      properties:
+        categoryId: { type: string, format: uuid }
+        titleEn: { type: string, minLength: 1, maxLength: 120 }
+        titleRu: { type: string, minLength: 1, maxLength: 120 }
+        descriptionEn: { type: string, maxLength: 1200 }
+        descriptionRu: { type: string, maxLength: 1200 }
+        priceStars: { type: integer, minimum: 1, maximum: 100000 }
+        mediaType: { type: string, enum: [video, audio, image] }
+        mediaPath: { type: ["string", "null"] }
+        mediaContentType: { type: ["string", "null"] }
+        fileName: { type: ["string", "null"] }
+    InvoiceInput:
+      type: object
+      properties:
+        productId: { type: string, format: uuid }
+      required: [productId]
+    Invoice:
+      type: object
+      properties:
+        invoiceUrl: { type: string, format: uri }
+      required: [invoiceUrl]
 

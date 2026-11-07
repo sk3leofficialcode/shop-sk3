@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "SK3LE WATERMARK BOT"
+description = "A bilingual Telegram Mini App storefront for digital watermarks, voiceovers, edit audios, profile pictures and custom creator packs, with owner-managed listings and Telegram Stars checkout."
+version = "1.0.0"
+id = "artifacts/sk3le-watermark-bot"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26203
+
+[services.development]
+run = "pnpm --filter @workspace/sk3le-watermark-bot run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/sk3le-watermark-bot", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/sk3le-watermark-bot/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26203"
+BASE_PATH = "/"
