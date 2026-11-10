@@ -1,0 +1,1 @@
+- [Store persistence](catalog-persistence.md) — Anything added to the SK3LE store must persist; only explicit deletion should remove it.

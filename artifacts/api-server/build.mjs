@@ -28,6 +28,8 @@ async function buildAll() {
     // - uses native modules and loads them dynamically (e.g. sharp)
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
+      // Keep Telegraf's AbortSignal polyfill unbundled so node-fetch v2 accepts it.
+      "telegraf",
       "*.node",
       "sharp",
       "better-sqlite3",
