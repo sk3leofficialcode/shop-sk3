@@ -213,13 +213,19 @@ function Home() {
         if (file) {
           const formData = new FormData(); formData.append('file', file);
           const response = await fetch('/api/admin/media', { method: 'POST', body: formData, credentials: 'include' });
-          if (!response.ok) throw new Error('Upload failed');
+          if (!response.ok) {
+            const failure = await response.json().catch(() => undefined) as { error?: string } | undefined;
+            throw new Error(failure?.error || `Upload failed (${response.status})`);
+          }
           uploaded = await response.json() as { mediaPath: string; mediaUrl: string; mediaContentType: string; fileName: string; mediaType: ProductMediaType };
         }
         if (uploaded) data = { ...data, mediaPath: uploaded.mediaPath, mediaContentType: uploaded.mediaContentType, fileName: uploaded.fileName, mediaType: uploaded.mediaType };
         if (editProduct) updateProduct.mutate({ productId: editProduct.id, data: data as ProductUpdate }, { onSuccess: () => { setProductFormOpen(false); invalidate(); notify(t('Product saved.', 'Товар сохранён.')); }, onError: () => notify(t('Could not save product.', 'Не удалось сохранить товар.')) });
         else createProduct.mutate({ data: data as ProductInput }, { onSuccess: () => { setProductFormOpen(false); invalidate(); notify(t('Product added to the shop.', 'Товар добавлен в магазин.')); }, onError: () => notify(t('Could not create product.', 'Не удалось добавить товар.')) });
-      } catch { notify(t('Media upload failed. Check the file and try again.', 'Не удалось загрузить файл. Проверьте файл и попробуйте снова.')); }
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : t('Unknown error', 'Неизвестная ошибка');
+        notify(t(`Media upload failed: ${detail}`, `Не удалось загрузить файл: ${detail}`));
+      }
     }} />}
     {categoryFormOpen && <div className="modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setCategoryFormOpen(false); }}><section className="form-modal" role="dialog" aria-modal="true"><button className="modal-close" onClick={() => setCategoryFormOpen(false)} aria-label={t('Close', 'Закрыть')}><X size={18} /></button><div className="eyebrow"><span className="eyebrow-line" />{t('STUDIO / CATEGORIES', 'СТУДИЯ / КАТЕГОРИИ')}</div><h2>{editCategory ? t('Edit category', 'Изменить категорию') : t('New category', 'Новая категория')}</h2><form onSubmit={saveCategory} className="editor-form"><label>{t('Name in English', 'Название на английском')}<input name="labelEn" required maxLength={64} defaultValue={editCategory?.labelEn} /></label><label>{t('Name in Russian', 'Название на русском')}<input name="labelRu" required maxLength={64} defaultValue={editCategory?.labelRu} /></label>{editCategory && <label>{t('Sort order', 'Порядок')}<input name="sortOrder" type="number" min="0" defaultValue={editCategory.sortOrder} /></label>}<button className="button-primary full-button" disabled={createCategory.isPending || updateCategory.isPending}>{t('Save category', 'Сохранить категорию')} <Check size={15} /></button></form></section></div>}
   </main>;

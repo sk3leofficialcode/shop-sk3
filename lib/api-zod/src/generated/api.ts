@@ -99,7 +99,7 @@ export const UploadMediaBody = zod.object({
 
 export const UploadMediaResponse = zod.object({
   "mediaPath": zod.string(),
-  "mediaUrl": zod.string().url(),
+  "mediaUrl": zod.string().describe('Same-origin media serving path'),
   "mediaContentType": zod.string(),
   "fileName": zod.string(),
   "mediaType": zod.enum(['video', 'audio', 'image'])

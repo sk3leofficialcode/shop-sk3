@@ -7,7 +7,7 @@ import multer from "multer";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { UploadMediaResponse } from "@workspace/api-zod";
 import { isAdminSession } from "../lib/adminAuth";
-import { getMediaUrl, getStoredMedia, mediaTypeForFile, objectStorageService, saveUploadedMedia } from "../lib/mediaStorage";
+import { deleteStoredMedia, getMediaUrl, getStoredMedia, mediaTypeForFile, objectStorageService, saveUploadedMedia } from "../lib/mediaStorage";
 import { ObjectNotFoundError } from "../lib/objectStorage";
 
 const router: IRouter = Router();
@@ -40,16 +40,23 @@ router.post("/admin/media", (req: Request, res: Response): void => {
     }
 
     void (async () => {
+      let storedMediaPath: string | undefined;
       try {
         const stored = await saveUploadedMedia(req.file!);
-        res.status(201).json(
-          UploadMediaResponse.parse({
-            ...stored,
-            mediaContentType: req.file!.mimetype,
-            fileName: path.basename(req.file!.originalname),
-          }),
-        );
+        storedMediaPath = stored.mediaPath;
+        const response = UploadMediaResponse.parse({
+          ...stored,
+          mediaContentType: req.file!.mimetype,
+          fileName: path.basename(req.file!.originalname),
+        });
+        res.status(201).json(response);
+        storedMediaPath = undefined;
       } catch (uploadError) {
+        if (storedMediaPath) {
+          await deleteStoredMedia(storedMediaPath).catch((cleanupError: unknown) => {
+            req.log.warn({ err: cleanupError, mediaPath: storedMediaPath }, "Could not remove orphaned store media");
+          });
+        }
         req.log.error({ err: uploadError }, "Could not save store media");
         res.status(400).json({
           error: uploadError instanceof Error ? uploadError.message : "Could not save the media file",

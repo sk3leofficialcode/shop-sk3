@@ -9,6 +9,7 @@ import type { MediaUploadMediaType } from './mediaUploadMediaType';
 
 export interface MediaUpload {
   mediaPath: string;
+  /** Same-origin media serving path */
   mediaUrl: string;
   mediaContentType: string;
   fileName: string;

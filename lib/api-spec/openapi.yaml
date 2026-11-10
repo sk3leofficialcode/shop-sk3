@@ -456,7 +456,7 @@ components:
       type: object
       properties:
         mediaPath: { type: string }
-        mediaUrl: { type: string, format: uri }
+        mediaUrl: { type: string, description: Same-origin media serving path }
         mediaContentType: { type: string }
         fileName: { type: string }
         mediaType: { type: string, enum: [video, audio, image] }

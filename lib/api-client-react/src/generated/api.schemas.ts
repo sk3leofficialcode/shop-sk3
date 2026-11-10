@@ -89,6 +89,7 @@ export const MediaUploadMediaType = {
 
 export interface MediaUpload {
   mediaPath: string;
+  /** Same-origin media serving path */
   mediaUrl: string;
   mediaContentType: string;
   fileName: string;
